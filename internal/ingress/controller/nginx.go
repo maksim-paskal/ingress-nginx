@@ -648,7 +648,16 @@ func (n *NGINXController) testTemplate(cfg []byte) error {
 	if err != nil {
 		return err
 	}
-	defer tmpfile.Close()
+	defer func() {
+		if err := tmpfile.Close(); err != nil {
+			klog.ErrorS(err, "Error closing temp file", "file", tmpfile.Name())
+		}
+
+		if err := os.Remove(tmpfile.Name()); err != nil {
+			klog.ErrorS(err, "Error removing temp file", "file", tmpfile.Name())
+		}
+	}()
+
 	err = os.WriteFile(tmpfile.Name(), cfg, file.ReadWriteByUser)
 	if err != nil {
 		return err
@@ -666,7 +675,6 @@ Error: %v
 		return errors.New(oe)
 	}
 
-	os.Remove(tmpfile.Name())
 	return nil
 }
 
